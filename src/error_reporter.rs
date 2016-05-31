@@ -3,6 +3,8 @@ use std::fmt;
 use text_buffer_2d::*;
 use term;
 
+use codemap::Span;
+
 #[derive(Copy, PartialEq, Clone, Debug)]
 pub enum Level {
     Bug,
@@ -15,6 +17,18 @@ pub enum Level {
     Note,
     Help,
     Cancelled,
+}
+
+#[derive(Debug)]
+pub enum Error { unresolved_name }
+
+#[derive(Debug)]
+pub enum Label { primary, secondary }
+
+#[derive(Debug)]
+pub struct ErrorReporter {
+    kind: Error,
+    labels: Vec<(Span, Label)>
 }
 
 impl fmt::Display for Level {
@@ -46,20 +60,6 @@ impl Level {
     }
 }
 
-#[derive(Debug)]
-pub enum Error { unresolved_name }
-
-#[derive(Debug)]
-pub enum Label { primary }
-
-type Span = i32;
-
-#[derive(Debug)]
-pub struct ErrorReporter {
-    kind: Error,
-    labels: Vec<(Span, Label)>
-}
-
 impl ErrorReporter {
     pub fn span_label(&mut self, span: Span, label: Label) -> &mut ErrorReporter {
         self.labels.push((span, label));
@@ -76,7 +76,8 @@ impl ErrorReporter {
 
         for label in &self.labels {
             let label_text = match label.1 {
-                Label::primary => buffer.puts(current_line, 0, "Error", Style::LabelPrimary)
+                Label::primary => buffer.puts(current_line, 0, "Error", Style::LabelPrimary),
+                Label::secondary => buffer.puts(current_line, 0, "Error", Style::LabelSecondary),
             };
             current_line += 1;
         }
