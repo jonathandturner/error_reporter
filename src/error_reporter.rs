@@ -1,23 +1,10 @@
 use std::fmt;
+use std::rc::Rc;
 
 use text_buffer_2d::*;
 use term;
 
-use codemap::Span;
-
-#[derive(Copy, PartialEq, Clone, Debug)]
-pub enum Level {
-    Bug,
-    Fatal,
-    // An error which while not immediately fatal, should stop the compiler
-    // progressing beyond the current phase.
-    PhaseFatal,
-    Error,
-    Warning,
-    Note,
-    Help,
-    Cancelled,
-}
+use codemap::{self, Span};
 
 #[derive(Debug)]
 pub enum Error { unresolved_name }
@@ -25,10 +12,11 @@ pub enum Error { unresolved_name }
 #[derive(Debug)]
 pub enum Label { primary, secondary }
 
-#[derive(Debug)]
 pub struct ErrorReporter {
     kind: Error,
-    labels: Vec<(Span, Label)>
+    primary_span: Span,
+    labels: Vec<(Span, Label)>,
+    cm: Rc<codemap::CodeMap>
 }
 
 impl fmt::Display for Level {
@@ -66,8 +54,8 @@ impl ErrorReporter {
         self
     }
 
-    pub fn new(error: Error) -> ErrorReporter {
-        ErrorReporter { kind: error, labels: vec![] }
+    pub fn new(error: Error, primary_span: Span, cm: Rc<codemap::CodeMap>) -> ErrorReporter {
+        ErrorReporter { kind: error, primary_span: primary_span, labels: vec![], cm: cm }
     }
 
     pub fn emit(&mut self) -> Vec<Vec<StyledString>> {
@@ -75,9 +63,17 @@ impl ErrorReporter {
         let mut current_line = 0;
 
         for label in &self.labels {
-            let label_text = match label.1 {
-                Label::primary => buffer.puts(current_line, 0, "Error", Style::LabelPrimary),
-                Label::secondary => buffer.puts(current_line, 0, "Error", Style::LabelSecondary),
+            let label_text = match label {
+                &(sp, Label::primary) => {
+                    buffer.puts(current_line, 0, "Error", Style::LabelPrimary);
+                    buffer.puts(current_line, 20, &self.cm.span_to_string(sp),
+                        Style::UnderlinePrimary);
+                }
+                &(sp, Label::secondary) => {
+                    buffer.puts(current_line, 0, "Error", Style::LabelSecondary);
+                    buffer.puts(current_line, 20, &self.cm.span_to_string(sp),
+                        Style::UnderlineSecondary);
+                }
             };
             current_line += 1;
         }

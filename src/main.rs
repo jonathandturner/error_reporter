@@ -58,19 +58,21 @@ impl CodeMapExtension for CodeMap {
     }
 }
 
-fn render() -> io::Result<()> {
+fn render(msg: Vec<Vec<StyledString>>) -> io::Result<()> {
     let mut dst = Destination::from_stderr();
-    write!(&mut dst, "{}", "Before ")?;
-    dst.start_attr(term::Attr::Bold)?;
-    dst.start_attr(term::Attr::ForegroundColor(term::color::BLUE))?;
-    write!(&mut dst, "{}", "during ")?;
-    dst.reset_attrs()?;
-    write!(&mut dst, "{}", "after")?;
+
+    for line in msg {
+        for part in line {
+            dst.apply_style(Level::Error, part.style);
+            write!(&mut dst, "{}", part.text);
+            dst.reset_attrs()?;
+        }
+        write!(&mut dst, "\n");
+    }
     Ok(())
 }
 
 fn main() {
-    let mut err = ErrorReporter::new(Error::unresolved_name);
     let file_text = r#"
 fn foo() {
     vec.push(vec.pop().unwrap());
@@ -81,13 +83,12 @@ fn foo() {
     let span_vec0 = cm.span_substr(&foo, file_text, "vec", 0);
     let span_vec1 = cm.span_substr(&foo, file_text, "vec", 1);
 
+    let mut err = ErrorReporter::new(Error::unresolved_name, span_vec0, cm);
+
     err.span_label(span_vec1, Label::primary);
     err.span_label(span_vec0, Label::secondary);
 
-    let cm = Rc::new(CodeMap::new());
-    let foo_map = cm.new_filemap_and_lines("foo.rs", file_text);
+    let msg = err.emit();
 
-    println!("{:?}", foo_map);
-
-    render();
+    render(msg);
 }

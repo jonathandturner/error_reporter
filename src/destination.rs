@@ -51,6 +51,16 @@ impl Destination {
             }
             Style::NoStyle => {
             }
+            Style::Level(Level::Error) => {
+                try!(self.start_attr(term::Attr::Bold));
+                try!(self.start_attr(term::Attr::ForegroundColor(term::color::BRIGHT_RED)));
+            }
+            Style::Level(Level::Warning) => {
+                try!(self.start_attr(term::Attr::Bold));
+                try!(self.start_attr(term::Attr::ForegroundColor(term::color::YELLOW)));
+            }
+            Style::Level(_) => {
+            }
         }
         Ok(())
     }

@@ -1,3 +1,17 @@
+#[derive(Copy, PartialEq, Clone, Debug)]
+pub enum Level {
+    Bug,
+    Fatal,
+    // An error which while not immediately fatal, should stop the compiler
+    // progressing beyond the current phase.
+    PhaseFatal,
+    Error,
+    Warning,
+    Note,
+    Help,
+    Cancelled,
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Style {
     FileNameStyle,
@@ -11,6 +25,7 @@ pub enum Style {
     OldSkoolNoteText,
     OldSkoolNote,
     NoStyle,
+    Level(Level)
 }
 
 #[derive(Debug)]
