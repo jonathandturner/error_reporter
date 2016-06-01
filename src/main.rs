@@ -1,4 +1,5 @@
 #![feature(question_mark)]
+#![feature(range_contains)]
 
 extern crate term;
 

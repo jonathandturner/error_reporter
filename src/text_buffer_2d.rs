@@ -176,4 +176,8 @@ impl TextBuffer2D {
             self.puts(line, col, string, style);
         }
     }
+
+    pub fn num_lines(&self) -> usize {
+        self.text.len()
+    }
 }
