@@ -81,13 +81,13 @@ fn foo() {
 "#;
     let cm = Rc::new(CodeMap::new());
     let foo = cm.new_filemap_and_lines("foo.rs", file_text);
-    let span_vec0 = cm.span_substr(&foo, file_text, "vec", 0);
-    let span_vec1 = cm.span_substr(&foo, file_text, "vec", 1);
+    let span_vec1 = cm.span_substr(&foo, file_text, "vec", 0);
+    let span_vec0 = cm.span_substr(&foo, file_text, "vec", 1);
 
     let mut err = ErrorReporter::new(Level::Error, String::from("Unresolved name"), span_vec0, cm);
 
-    err.span_label(span_vec1, Some(String::from("Primary")));
-    err.span_label(span_vec0, Some(String::from("Secondary")));
+    err.span_label(span_vec0, Some(String::from("Primary")));
+    err.span_label(span_vec1, Some(String::from("Secondary")));
 
     let msg = err.render();
 
