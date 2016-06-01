@@ -60,12 +60,12 @@ impl CodeMapExtension for CodeMap {
     }
 }
 
-fn emit(msg: Vec<Vec<StyledString>>) -> io::Result<()> {
+fn emit(level: Level, msg: Vec<Vec<StyledString>>) -> io::Result<()> {
     let mut dst = Destination::from_stderr();
 
     for line in msg {
         for part in line {
-            dst.apply_style(Level::Error, part.style);
+            dst.apply_style(level, part.style);
             write!(&mut dst, "{}", part.text);
             dst.reset_attrs()?;
         }
@@ -74,9 +74,21 @@ fn emit(msg: Vec<Vec<StyledString>>) -> io::Result<()> {
     Ok(())
 }
 
-fn main() {
+fn test1() {
     let file_text = r#"
 fn foo() {
+    //blah blah
+    //blah blah
+    vec.pop();
+    //blah blah
+    //blah blah
+    //blah blah
+    //blah blah
+    //blah blah
+    //blah blah
+    //blah blah
+    //blah blah
+    //blah blah
     vec.push(vec.pop().unwrap());
 }
 "#;
@@ -87,10 +99,40 @@ fn foo() {
 
     let mut err = ErrorReporter::new(Level::Error, String::from("Unresolved name"), span_vec0, cm);
 
-    err.span_label(span_vec0, Some(String::from("Primary")));
-    err.span_label(span_vec1, Some(String::from("Secondary")));
+    err.span_label(span_vec0, Some(String::from("primary message")));
+    err.span_label(span_vec1, Some(String::from("secondary message")));
 
     let msg = err.render();
 
-    emit(msg);
+    emit(Level::Error, msg);
+}
+
+fn test2() {
+    let file_text = r#"
+fn foo() {
+    vec.push(vec.pop().unwrap());
+}
+"#;
+    let cm = Rc::new(CodeMap::new());
+    let foo = cm.new_filemap_and_lines("foo.rs", file_text);
+    let span_vec1 = cm.span_substr(&foo, file_text, "vec", 0);
+    let span_vec0 = cm.span_substr(&foo, file_text, "vec", 1);
+
+    let mut err = ErrorReporter::new(Level::Warning,
+                                     String::from("Not sure what this is"),
+                                     span_vec0,
+                                     cm);
+
+    err.span_label(span_vec0, Some(String::from("primary message")));
+    err.span_label(span_vec1, Some(String::from("secondary message")));
+
+    let msg = err.render();
+
+    emit(Level::Warning, msg);
+}
+
+fn main() {
+    test1();
+    println!("");
+    test2();
 }
