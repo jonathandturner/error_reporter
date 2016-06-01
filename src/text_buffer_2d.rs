@@ -1,3 +1,6 @@
+use term;
+use std::fmt;
+
 #[derive(Copy, PartialEq, Clone, Debug)]
 pub enum Level {
     Bug,
@@ -14,6 +17,7 @@ pub enum Level {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Style {
+    HeaderMsg,
     FileNameStyle,
     LineAndColumn,
     LineNumber,
@@ -25,7 +29,7 @@ pub enum Style {
     OldSkoolNoteText,
     OldSkoolNote,
     NoStyle,
-    Level(Level)
+    Level(Level),
 }
 
 #[derive(Debug)]
@@ -37,12 +41,39 @@ pub struct StyledString {
 #[derive(Debug)]
 pub struct TextBuffer2D {
     text: Vec<Vec<char>>,
-    styles: Vec<Vec<Style>>
+    styles: Vec<Vec<Style>>,
+}
+
+impl Level {
+    pub fn color(self) -> term::color::Color {
+        match self {
+            Level::Bug | Level::Fatal | Level::PhaseFatal | Level::Error => term::color::BRIGHT_RED,
+            Level::Warning => term::color::YELLOW,
+            Level::Note => term::color::BRIGHT_GREEN,
+            Level::Help => term::color::BRIGHT_CYAN,
+            Level::Cancelled => unreachable!(),
+        }
+    }
+
+    pub fn to_string(self) -> String {
+        let output = match self {
+            Level::Bug => "error: internal compiler error",
+            Level::Fatal | Level::PhaseFatal | Level::Error => "error",
+            Level::Warning => "warning",
+            Level::Note => "note",
+            Level::Help => "help",
+            Level::Cancelled => panic!("Shouldn't call on cancelled error"),
+        };
+        String::from(output)
+    }
 }
 
 impl TextBuffer2D {
     pub fn new() -> TextBuffer2D {
-        TextBuffer2D { text: vec![], styles: vec![] }
+        TextBuffer2D {
+            text: vec![],
+            styles: vec![],
+        }
     }
 
     pub fn render(&self) -> Vec<Vec<StyledString>> {
@@ -56,7 +87,10 @@ impl TextBuffer2D {
             for (&c, &s) in row.iter().zip(row_style) {
                 if s != current_style {
                     if !current_text.is_empty() {
-                        styled_vec.push(StyledString { text: current_text, style: current_style });
+                        styled_vec.push(StyledString {
+                            text: current_text,
+                            style: current_style,
+                        });
                     }
                     current_style = s;
                     current_text = String::new();
@@ -64,10 +98,13 @@ impl TextBuffer2D {
                 current_text.push(c);
             }
             if !current_text.is_empty() {
-                styled_vec.push(StyledString { text: current_text, style: current_style });
+                styled_vec.push(StyledString {
+                    text: current_text,
+                    style: current_style,
+                });
             }
 
-            //We're done with the row, push and keep going
+            // We're done with the row, push and keep going
             output.push(styled_vec);
 
             styled_vec = vec![];
@@ -76,12 +113,15 @@ impl TextBuffer2D {
         output
     }
 
-    pub fn putc(&mut self, line: usize, col: usize, chr: char, style: Style) {
+    fn ensure_lines(&mut self, line: usize) {
         while line >= self.text.len() {
             self.text.push(vec![]);
             self.styles.push(vec![]);
         }
+    }
 
+    pub fn putc(&mut self, line: usize, col: usize, chr: char, style: Style) {
+        self.ensure_lines(line);
         if col < self.text[line].len() {
             self.text[line][col] = chr;
             self.styles[line][col] = style;
@@ -90,7 +130,7 @@ impl TextBuffer2D {
             while i < col {
                 let s = match self.text[0].get(i) {
                     Some(&'\t') => '\t',
-                    _ => ' '
+                    _ => ' ',
                 };
                 self.text[line].push(s);
                 self.styles[line].push(Style::NoStyle);
@@ -115,6 +155,19 @@ impl TextBuffer2D {
         }
     }
 
+    pub fn prepend(&mut self, line: usize, string: &str, style: Style) {
+        self.ensure_lines(line);
+        let string_len = string.len();
+
+        //Push the old content over to make room for new content
+        for i in 0..string_len {
+            self.styles[line].insert(0, Style::NoStyle);
+            self.text[line].insert(0, ' ');
+        }
+
+        self.puts(line, 0, string, style);
+    }
+
     pub fn append(&mut self, line: usize, string: &str, style: Style) {
         if line >= self.text.len() {
             self.puts(line, 0, string, style);
@@ -124,4 +177,3 @@ impl TextBuffer2D {
         }
     }
 }
-

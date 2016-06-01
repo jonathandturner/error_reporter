@@ -16,41 +16,35 @@ impl Destination {
     pub fn from_stderr() -> Destination {
         match term::stderr() {
             Some(t) => Destination::Terminal(t),
-            None    => Destination::Raw(Box::new(io::stderr())),
+            None => Destination::Raw(Box::new(io::stderr())),
         }
     }
 
-    pub fn apply_style(&mut self,
-                   lvl: Level,
-                   style: Style)
-                   -> io::Result<()> {
+    pub fn apply_style(&mut self, lvl: Level, style: Style) -> io::Result<()> {
         match style {
-            Style::FileNameStyle |
-            Style::LineAndColumn => {
-            }
+            Style::FileNameStyle | Style::LineAndColumn => {}
             Style::LineNumber => {
                 try!(self.start_attr(term::Attr::Bold));
                 try!(self.start_attr(term::Attr::ForegroundColor(term::color::BRIGHT_BLUE)));
             }
-            Style::Quotation => {
-            }
+            Style::Quotation => {}
             Style::OldSkoolNote => {
                 try!(self.start_attr(term::Attr::Bold));
                 try!(self.start_attr(term::Attr::ForegroundColor(term::color::BRIGHT_GREEN)));
             }
-            Style::OldSkoolNoteText => {
+            Style::OldSkoolNoteText | Style::HeaderMsg => {
                 try!(self.start_attr(term::Attr::Bold));
             }
             Style::UnderlinePrimary | Style::LabelPrimary => {
                 try!(self.start_attr(term::Attr::Bold));
                 try!(self.start_attr(term::Attr::ForegroundColor(lvl.color())));
             }
-            Style::UnderlineSecondary | Style::LabelSecondary => {
+            Style::UnderlineSecondary |
+            Style::LabelSecondary => {
                 try!(self.start_attr(term::Attr::Bold));
                 try!(self.start_attr(term::Attr::ForegroundColor(term::color::BRIGHT_BLUE)));
             }
-            Style::NoStyle => {
-            }
+            Style::NoStyle => {}
             Style::Level(Level::Error) => {
                 try!(self.start_attr(term::Attr::Bold));
                 try!(self.start_attr(term::Attr::ForegroundColor(term::color::BRIGHT_RED)));
@@ -59,33 +53,36 @@ impl Destination {
                 try!(self.start_attr(term::Attr::Bold));
                 try!(self.start_attr(term::Attr::ForegroundColor(term::color::YELLOW)));
             }
-            Style::Level(_) => {
-            }
+            Style::Level(_) => {}
         }
         Ok(())
     }
 
     pub fn start_attr(&mut self, attr: term::Attr) -> io::Result<()> {
         match *self {
-            Destination::Terminal(ref mut t) => { try!(t.attr(attr)); }
-            Destination::Raw(_) => { }
+            Destination::Terminal(ref mut t) => {
+                try!(t.attr(attr));
+            }
+            Destination::Raw(_) => {}
         }
         Ok(())
     }
 
     pub fn reset_attrs(&mut self) -> io::Result<()> {
         match *self {
-            Destination::Terminal(ref mut t) => { try!(t.reset()); }
-            Destination::Raw(_) => { }
+            Destination::Terminal(ref mut t) => {
+                try!(t.reset());
+            }
+            Destination::Raw(_) => {}
         }
         Ok(())
     }
 
     pub fn print_maybe_styled(&mut self,
-                          args: fmt::Arguments,
-                          color: term::Attr,
-                          print_newline_at_end: bool)
-                          -> io::Result<()> {
+                              args: fmt::Arguments,
+                              color: term::Attr,
+                              print_newline_at_end: bool)
+                              -> io::Result<()> {
         match *self {
             Destination::Terminal(ref mut t) => {
                 try!(t.attr(color));

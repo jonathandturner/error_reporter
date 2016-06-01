@@ -32,14 +32,16 @@ impl CodeMapExtension for CodeMap {
                    source_text: &str,
                    substring: &str,
                    n: usize)
-                   -> Span
-    {
+                   -> Span {
         let mut i = 0;
         let mut hi = 0;
         loop {
             let offset = source_text[hi..].find(substring).unwrap_or_else(|| {
                 panic!("source_text `{}` does not have {} occurrences of `{}`, only {}",
-                       source_text, n, substring, i);
+                       source_text,
+                       n,
+                       substring,
+                       i);
             });
             let lo = hi + offset;
             hi = lo + substring.len();
@@ -49,8 +51,7 @@ impl CodeMapExtension for CodeMap {
                     hi: BytePos(hi as u32 + file.start_pos.0),
                     expn_id: NO_EXPANSION,
                 };
-                assert_eq!(&self.span_to_snippet(span).unwrap()[..],
-                           substring);
+                assert_eq!(&self.span_to_snippet(span).unwrap()[..], substring);
                 return span;
             }
             i += 1;
@@ -58,7 +59,7 @@ impl CodeMapExtension for CodeMap {
     }
 }
 
-fn render(msg: Vec<Vec<StyledString>>) -> io::Result<()> {
+fn emit(msg: Vec<Vec<StyledString>>) -> io::Result<()> {
     let mut dst = Destination::from_stderr();
 
     for line in msg {
@@ -83,12 +84,12 @@ fn foo() {
     let span_vec0 = cm.span_substr(&foo, file_text, "vec", 0);
     let span_vec1 = cm.span_substr(&foo, file_text, "vec", 1);
 
-    let mut err = ErrorReporter::new(Error::unresolved_name, span_vec0, cm);
+    let mut err = ErrorReporter::new(Level::Error, String::from("Unresolved name"), span_vec0, cm);
 
-    err.span_label(span_vec1, Label::primary);
-    err.span_label(span_vec0, Label::secondary);
+    err.span_label(span_vec1, Some(String::from("Primary")));
+    err.span_label(span_vec0, Some(String::from("Secondary")));
 
-    let msg = err.emit();
+    let msg = err.render();
 
-    render(msg);
+    emit(msg);
 }
