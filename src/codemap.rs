@@ -55,8 +55,13 @@ pub struct CharPos(pub usize);
 // have been unsuccessful
 
 impl Pos for BytePos {
-    fn from_usize(n: usize) -> BytePos { BytePos(n as u32) }
-    fn to_usize(&self) -> usize { let BytePos(n) = *self; n as usize }
+    fn from_usize(n: usize) -> BytePos {
+        BytePos(n as u32)
+    }
+    fn to_usize(&self) -> usize {
+        let BytePos(n) = *self;
+        n as usize
+    }
 }
 
 impl Add for BytePos {
@@ -76,8 +81,13 @@ impl Sub for BytePos {
 }
 
 impl Pos for CharPos {
-    fn from_usize(n: usize) -> CharPos { CharPos(n) }
-    fn to_usize(&self) -> usize { let CharPos(n) = *self; n }
+    fn from_usize(n: usize) -> CharPos {
+        CharPos(n)
+    }
+    fn to_usize(&self) -> usize {
+        let CharPos(n) = *self;
+        n
+    }
 }
 
 impl Add for CharPos {
@@ -114,7 +124,7 @@ pub struct Span {
     pub hi: BytePos,
     /// Information about where the macro came from, if this piece of
     /// code was created by a macro expansion.
-    pub expn_id: ExpnId
+    pub expn_id: ExpnId,
 }
 
 /// A collection of spans. Spans have two orthogonal attributes:
@@ -142,23 +152,37 @@ pub struct SpanLabel {
     pub label: Option<String>,
 }
 
-pub const DUMMY_SP: Span = Span { lo: BytePos(0), hi: BytePos(0), expn_id: NO_EXPANSION };
+pub const DUMMY_SP: Span = Span {
+    lo: BytePos(0),
+    hi: BytePos(0),
+    expn_id: NO_EXPANSION,
+};
 
 // Generic span to be used for code originating from the command line
-pub const COMMAND_LINE_SP: Span = Span { lo: BytePos(0),
-                                         hi: BytePos(0),
-                                         expn_id: COMMAND_LINE_EXPN };
+pub const COMMAND_LINE_SP: Span = Span {
+    lo: BytePos(0),
+    hi: BytePos(0),
+    expn_id: COMMAND_LINE_EXPN,
+};
 
 impl Span {
     /// Returns a new span representing just the end-point of this span
     pub fn end_point(self) -> Span {
         let lo = cmp::max(self.hi.0 - 1, self.lo.0);
-        Span { lo: BytePos(lo), hi: self.hi, expn_id: self.expn_id}
+        Span {
+            lo: BytePos(lo),
+            hi: self.hi,
+            expn_id: self.expn_id,
+        }
     }
 
     /// Returns `self` if `self` is not the dummy span, and `other` otherwise.
     pub fn substitute_dummy(self, other: Span) -> Span {
-        if self.source_equal(&DUMMY_SP) { other } else { self }
+        if self.source_equal(&DUMMY_SP) {
+            other
+        } else {
+            self
+        }
     }
 
     pub fn contains(self, other: Span) -> bool {
@@ -194,7 +218,7 @@ impl Span {
     /// Returns `Some(span)`, where the start is trimmed by the end of `other`
     pub fn trim_start(self, other: Span) -> Option<Span> {
         if self.hi > other.hi {
-            Some(Span { lo: cmp::max(self.lo, other.hi), .. self })
+            Some(Span { lo: cmp::max(self.lo, other.hi), ..self })
         } else {
             None
         }
@@ -208,8 +232,11 @@ pub struct Spanned<T> {
 }
 
 fn default_span_debug(span: Span, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "Span {{ lo: {:?}, hi: {:?}, expn_id: {:?} }}",
-           span.lo, span.hi, span.expn_id)
+    write!(f,
+           "Span {{ lo: {:?}, hi: {:?}, expn_id: {:?} }}",
+           span.lo,
+           span.hi,
+           span.expn_id)
 }
 
 thread_local!(pub static SPAN_DEBUG: Cell<fn(Span, &mut fmt::Formatter) -> fmt::Result> =
@@ -226,16 +253,23 @@ pub fn spanned<T>(lo: BytePos, hi: BytePos, t: T) -> Spanned<T> {
 }
 
 pub fn respan<T>(sp: Span, t: T) -> Spanned<T> {
-    Spanned {node: t, span: sp}
+    Spanned {
+        node: t,
+        span: sp,
+    }
 }
 
 pub fn dummy_spanned<T>(t: T) -> Spanned<T> {
     respan(DUMMY_SP, t)
 }
 
-/* assuming that we're not in macro expansion */
+// assuming that we're not in macro expansion
 pub fn mk_sp(lo: BytePos, hi: BytePos) -> Span {
-    Span {lo: lo, hi: hi, expn_id: NO_EXPANSION}
+    Span {
+        lo: lo,
+        hi: hi,
+        expn_id: NO_EXPANSION,
+    }
 }
 
 /// Return the span itself if it doesn't come from a macro expansion,
@@ -255,21 +289,21 @@ impl MultiSpan {
     pub fn new() -> MultiSpan {
         MultiSpan {
             primary_spans: vec![],
-            span_labels: vec![]
+            span_labels: vec![],
         }
     }
 
     pub fn from_span(primary_span: Span) -> MultiSpan {
         MultiSpan {
             primary_spans: vec![primary_span],
-            span_labels: vec![]
+            span_labels: vec![],
         }
     }
 
     pub fn from_spans(vec: Vec<Span>) -> MultiSpan {
         MultiSpan {
             primary_spans: vec,
-            span_labels: vec![]
+            span_labels: vec![],
         }
     }
 
@@ -300,7 +334,7 @@ impl MultiSpan {
             span_labels.push(SpanLabel {
                 span: span,
                 is_primary: is_primary(span),
-                label: Some(label.clone())
+                label: Some(label.clone()),
             });
         }
 
@@ -309,7 +343,7 @@ impl MultiSpan {
                 span_labels.push(SpanLabel {
                     span: span,
                     is_primary: true,
-                    label: None
+                    label: None,
                 });
             }
         }
@@ -336,7 +370,7 @@ pub struct Loc {
     /// The (1-based) line number
     pub line: usize,
     /// The (0-based) column offset
-    pub col: CharPos
+    pub col: CharPos,
 }
 
 /// A source code location used as the result of lookup_char_pos_adj
@@ -352,9 +386,15 @@ pub struct LocWithOpt {
 
 // used to be structural records. Better names, anyone?
 #[derive(Debug)]
-pub struct FileMapAndLine { pub fm: Rc<FileMap>, pub line: usize }
+pub struct FileMapAndLine {
+    pub fm: Rc<FileMap>,
+    pub line: usize,
+}
 #[derive(Debug)]
-pub struct FileMapAndBytePos { pub fm: Rc<FileMap>, pub pos: BytePos }
+pub struct FileMapAndBytePos {
+    pub fm: Rc<FileMap>,
+    pub pos: BytePos,
+}
 
 
 // _____________________________________________________________________________
@@ -381,7 +421,7 @@ pub struct NameAndSpan {
     /// The span of the macro definition itself. The macro may not
     /// have a sensible definition span (e.g. something defined
     /// completely inside libsyntax) in which case this is None.
-    pub span: Option<Span>
+    pub span: Option<Span>,
 }
 
 impl NameAndSpan {
@@ -407,7 +447,7 @@ pub struct ExpnInfo {
     /// pointing to the `foo!` invocation.
     pub call_site: Span,
     /// Information about the expansion.
-    pub callee: NameAndSpan
+    pub callee: NameAndSpan,
 }
 
 #[derive(PartialEq, Eq, Clone, Debug, Hash, Copy)]
@@ -447,7 +487,7 @@ pub struct LineInfo {
 
 pub struct FileLines {
     pub file: Rc<FileMap>,
-    pub lines: Vec<LineInfo>
+    pub lines: Vec<LineInfo>,
 }
 
 /// Identifies an offset of a multi-byte character in a FileMap
@@ -516,11 +556,11 @@ impl FileMap {
                     let slice = &src[begin..];
                     match slice.find('\n') {
                         Some(e) => &slice[..e],
-                        None => slice
+                        None => slice,
                     }
                 })
             }
-            None => None
+            None => None,
         }
     }
 
@@ -534,8 +574,7 @@ impl FileMap {
     }
 
     pub fn is_real_file(&self) -> bool {
-        !(self.name.starts_with("<") &&
-          self.name.ends_with(">"))
+        !(self.name.starts_with("<") && self.name.ends_with(">"))
     }
 
     pub fn is_imported(&self) -> bool {
@@ -578,7 +617,7 @@ impl FileLoader for RealFileLoader {
 pub struct CodeMap {
     pub files: RefCell<Vec<Rc<FileMap>>>,
     expansions: RefCell<Vec<ExpnInfo>>,
-    file_loader: Box<FileLoader>
+    file_loader: Box<FileLoader>,
 }
 
 impl CodeMap {
@@ -586,7 +625,7 @@ impl CodeMap {
         CodeMap {
             files: RefCell::new(Vec::new()),
             expansions: RefCell::new(Vec::new()),
-            file_loader: Box::new(RealFileLoader)
+            file_loader: Box::new(RealFileLoader),
         }
     }
 
@@ -594,7 +633,7 @@ impl CodeMap {
         CodeMap {
             files: RefCell::new(Vec::new()),
             expansions: RefCell::new(Vec::new()),
-            file_loader: file_loader
+            file_loader: file_loader,
         }
     }
 
@@ -702,7 +741,8 @@ impl CodeMap {
         (format!("<{}:{}:{}>",
                  pos.file.name,
                  pos.line,
-                 pos.col.to_usize() + 1)).to_string()
+                 pos.col.to_usize() + 1))
+            .to_string()
     }
 
     /// Lookup source information about a BytePos
@@ -765,7 +805,7 @@ impl CodeMap {
             filename: loc.file.name.to_string(),
             line: loc.line,
             col: loc.col,
-            file: Some(loc.file)
+            file: Some(loc.file),
         }
     }
 
@@ -785,19 +825,16 @@ impl CodeMap {
                         lo.line,
                         lo.col.to_usize() + 1,
                         hi.line,
-                        hi.col.to_usize() + 1)).to_string()
+                        hi.col.to_usize() + 1))
+            .to_string();
     }
 
     // Returns true if two spans have the same callee
     // (Assumes the same ExpnFormat implies same callee)
     fn match_callees(&self, sp_a: &Span, sp_b: &Span) -> bool {
-        let fmt_a = self
-            .with_expn_info(sp_a.expn_id,
-                            |ei| ei.map(|ei| ei.callee.format.clone()));
+        let fmt_a = self.with_expn_info(sp_a.expn_id, |ei| ei.map(|ei| ei.callee.format.clone()));
 
-        let fmt_b = self
-            .with_expn_info(sp_b.expn_id,
-                            |ei| ei.map(|ei| ei.callee.format.clone()));
+        let fmt_b = self.with_expn_info(sp_b.expn_id, |ei| ei.map(|ei| ei.callee.format.clone()));
         fmt_a == fmt_b
     }
 
@@ -821,7 +858,7 @@ impl CodeMap {
         self.span_to_expanded_string_internal(sp, "")
     }
 
-    fn span_to_expanded_string_internal(&self, sp:Span, indent: &str) -> String {
+    fn span_to_expanded_string_internal(&self, sp: Span, indent: &str) -> String {
         let mut indent = indent.to_owned();
         let mut output = "".to_owned();
         let span_str = self.span_to_string(sp);
@@ -842,10 +879,9 @@ impl CodeMap {
             return output;
         }
 
-        let mut callee = self.with_expn_info(sp.expn_id,
-                                             |ei| ei.and_then(|ei| ei.callee.span.clone()));
-        let mut callsite = self.with_expn_info(sp.expn_id,
-                                               |ei| ei.map(|ei| ei.call_site.clone()));
+        let mut callee =
+            self.with_expn_info(sp.expn_id, |ei| ei.and_then(|ei| ei.callee.span.clone()));
+        let mut callsite = self.with_expn_info(sp.expn_id, |ei| ei.map(|ei| ei.call_site.clone()));
 
         indent.push_str("  ");
         let mut is_recursive = false;
@@ -891,17 +927,16 @@ impl CodeMap {
         // callsite is the first callsite, which is also source-equivalent to the span.
         let mut first = true;
         while span.expn_id != NO_EXPANSION && span.expn_id != COMMAND_LINE_EXPN {
-            if let Some(callsite) = self.with_expn_info(span.expn_id,
-                                               |ei| ei.map(|ei| ei.call_site.clone())) {
+            if let Some(callsite) =
+                   self.with_expn_info(span.expn_id, |ei| ei.map(|ei| ei.call_site.clone())) {
                 if first && span.source_equal(&callsite) {
                     if self.lookup_char_pos(span.lo).file.is_real_file() {
-                        return Span { expn_id: NO_EXPANSION, .. span };
+                        return Span { expn_id: NO_EXPANSION, ..span };
                     }
                 }
                 first = false;
                 span = callsite;
-            }
-            else {
+            } else {
                 break;
             }
         }
@@ -918,22 +953,19 @@ impl CodeMap {
         // Special case - if a macro is parsed as an argument to another macro, the source
         // callsite is source-equivalent to the span, and the source callee is the first callee.
         let mut first = true;
-        while let Some(callsite) = self.with_expn_info(span.expn_id,
-                                            |ei| ei.map(|ei| ei.call_site.clone())) {
+        while let Some(callsite) =
+                  self.with_expn_info(span.expn_id, |ei| ei.map(|ei| ei.call_site.clone())) {
             if first && span.source_equal(&callsite) {
                 if self.lookup_char_pos(span.lo).file.is_real_file() {
-                    return self.with_expn_info(span.expn_id,
-                                               |ei| ei.map(|ei| ei.callee.clone()));
+                    return self.with_expn_info(span.expn_id, |ei| ei.map(|ei| ei.callee.clone()));
                 }
             }
             first = false;
-            if let Some(_) = self.with_expn_info(callsite.expn_id,
-                                                 |ei| ei.map(|ei| ei.call_site.clone())) {
+            if let Some(_) =
+                   self.with_expn_info(callsite.expn_id, |ei| ei.map(|ei| ei.call_site.clone())) {
                 span = callsite;
-            }
-            else {
-                return self.with_expn_info(span.expn_id,
-                                           |ei| ei.map(|ei| ei.callee.clone()));
+            } else {
+                return self.with_expn_info(span.expn_id, |ei| ei.map(|ei| ei.callee.clone()));
             }
         }
         None
@@ -969,22 +1001,30 @@ impl CodeMap {
         // and to the end of the line. Be careful because the line
         // numbers in Loc are 1-based, so we subtract 1 to get 0-based
         // lines.
-        for line_index in lo.line-1 .. hi.line-1 {
-            let line_len = lo.file.get_line(line_index)
-                                  .map(|s| s.chars().count())
-                                  .unwrap_or(0);
-            lines.push(LineInfo { line_index: line_index,
-                                  start_col: start_col,
-                                  end_col: CharPos::from_usize(line_len) });
+        for line_index in lo.line - 1..hi.line - 1 {
+            let line_len = lo.file
+                .get_line(line_index)
+                .map(|s| s.chars().count())
+                .unwrap_or(0);
+            lines.push(LineInfo {
+                line_index: line_index,
+                start_col: start_col,
+                end_col: CharPos::from_usize(line_len),
+            });
             start_col = CharPos::from_usize(0);
         }
 
         // For the last line, it extends from `start_col` to `hi.col`:
-        lines.push(LineInfo { line_index: hi.line - 1,
-                              start_col: start_col,
-                              end_col: hi.col });
+        lines.push(LineInfo {
+            line_index: hi.line - 1,
+            start_col: start_col,
+            end_col: hi.col,
+        });
 
-        Ok(FileLines {file: lo.file, lines: lines})
+        Ok(FileLines {
+            file: lo.file,
+            lines: lines,
+        })
     }
 
     pub fn span_to_snippet(&self, sp: Span) -> Result<String, SpanSnippetError> {
@@ -997,18 +1037,15 @@ impl CodeMap {
 
         if local_begin.fm.start_pos != local_end.fm.start_pos {
             return Err(SpanSnippetError::DistinctSources(DistinctSources {
-                begin: (local_begin.fm.name.clone(),
-                        local_begin.fm.start_pos),
-                end: (local_end.fm.name.clone(),
-                      local_end.fm.start_pos)
+                begin: (local_begin.fm.name.clone(), local_begin.fm.start_pos),
+                end: (local_end.fm.name.clone(), local_end.fm.start_pos),
             }));
         } else {
             match local_begin.fm.src {
                 Some(ref src) => {
                     let start_index = local_begin.pos.to_usize();
                     let end_index = local_end.pos.to_usize();
-                    let source_len = (local_begin.fm.end_pos -
-                                      local_begin.fm.start_pos).to_usize();
+                    let source_len = (local_begin.fm.end_pos - local_begin.fm.start_pos).to_usize();
 
                     if start_index > end_index || end_index > source_len {
                         return Err(SpanSnippetError::MalformedForCodemap(
@@ -1020,11 +1057,11 @@ impl CodeMap {
                             }));
                     }
 
-                    return Ok((&src[start_index..end_index]).to_string())
+                    return Ok((&src[start_index..end_index]).to_string());
                 }
                 None => {
                     return Err(SpanSnippetError::SourceNotAvailable {
-                        filename: local_begin.fm.name.clone()
+                        filename: local_begin.fm.name.clone(),
                     });
                 }
             }
@@ -1045,7 +1082,10 @@ impl CodeMap {
         let idx = self.lookup_filemap_idx(bpos);
         let fm = (*self.files.borrow())[idx].clone();
         let offset = bpos - fm.start_pos;
-        FileMapAndBytePos {fm: fm, pos: offset}
+        FileMapAndBytePos {
+            fm: fm,
+            pos: offset,
+        }
     }
 
     /// Converts an absolute BytePos to a CharPos relative to the filemap.
@@ -1098,10 +1138,7 @@ impl CodeMap {
     }
 
     /// Check if the backtrace `subtrace` contains `suptrace` as a prefix.
-    pub fn more_specific_trace(&self,
-                              mut subtrace: ExpnId,
-                              suptrace: ExpnId)
-                              -> bool {
+    pub fn more_specific_trace(&self, mut subtrace: ExpnId, suptrace: ExpnId) -> bool {
         loop {
             if subtrace == suptrace {
                 return true;
@@ -1132,12 +1169,13 @@ impl CodeMap {
         ExpnId(len as u32 - 1)
     }
 
-    pub fn with_expn_info<T, F>(&self, id: ExpnId, f: F) -> T where
-        F: FnOnce(Option<&ExpnInfo>) -> T,
+    pub fn with_expn_info<T, F>(&self, id: ExpnId, f: F) -> T
+        where F: FnOnce(Option<&ExpnInfo>) -> T
     {
         match id {
-            NO_EXPANSION | COMMAND_LINE_EXPN => f(None),
-            ExpnId(i) => f(Some(&(*self.expansions.borrow())[i as usize]))
+            NO_EXPANSION |
+            COMMAND_LINE_EXPN => f(None),
+            ExpnId(i) => f(Some(&(*self.expansions.borrow())[i as usize])),
         }
     }
 
@@ -1149,12 +1187,13 @@ impl CodeMap {
         let mut expn_id = span.expn_id;
         loop {
             let quit = self.with_expn_info(expn_id, |expninfo| {
-                expninfo.map_or(/* hit the top level */ true, |info| {
+                expninfo.map_or(// hit the top level
+                                true,
+                                |info| {
 
                     let span_comes_from_this_expansion =
-                        info.callee.span.map_or(span.source_equal(&info.call_site), |mac_span| {
-                            mac_span.contains(span)
-                        });
+                        info.callee.span.map_or(span.source_equal(&info.call_site),
+                                                |mac_span| mac_span.contains(span));
 
                     if span_comes_from_this_expansion {
                         allows_unstable = info.callee.allow_internal_unstable;
@@ -1168,7 +1207,7 @@ impl CodeMap {
                 })
             });
             if quit {
-                break
+                break;
             }
         }
         allows_unstable
@@ -1246,13 +1285,15 @@ pub enum SpanSnippetError {
     IllFormedSpan(Span),
     DistinctSources(DistinctSources),
     MalformedForCodemap(MalformedCodemapPositions),
-    SourceNotAvailable { filename: String }
+    SourceNotAvailable {
+        filename: String,
+    },
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct DistinctSources {
     begin: (String, BytePos),
-    end: (String, BytePos)
+    end: (String, BytePos),
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -1260,7 +1301,7 @@ pub struct MalformedCodemapPositions {
     name: String,
     source_len: usize,
     begin_pos: BytePos,
-    end_pos: BytePos
+    end_pos: BytePos,
 }
 
 
@@ -1273,7 +1314,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn t1 () {
+    fn t1() {
         let cm = CodeMap::new();
         let fm = cm.new_filemap("blork.rs".to_string(),
                                 "first line.\nsecond line".to_string());
@@ -1289,7 +1330,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn t2 () {
+    fn t2() {
         let cm = CodeMap::new();
         let fm = cm.new_filemap("blork.rs".to_string(),
                                 "first line.\nsecond line".to_string());
@@ -1303,8 +1344,7 @@ mod tests {
         let cm = CodeMap::new();
         let fm1 = cm.new_filemap("blork.rs".to_string(),
                                  "first line.\nsecond line".to_string());
-        let fm2 = cm.new_filemap("empty.rs".to_string(),
-                                 "".to_string());
+        let fm2 = cm.new_filemap("empty.rs".to_string(), "".to_string());
         let fm3 = cm.new_filemap("blork2.rs".to_string(),
                                  "first line.\nsecond line".to_string());
 
@@ -1366,9 +1406,8 @@ mod tests {
     fn init_code_map_mbc() -> CodeMap {
         let cm = CodeMap::new();
         // € is a three byte utf8 char.
-        let fm1 =
-            cm.new_filemap("blork.rs".to_string(),
-                           "fir€st €€€€ line.\nsecond line".to_string());
+        let fm1 = cm.new_filemap("blork.rs".to_string(),
+                                 "fir€st €€€€ line.\nsecond line".to_string());
         let fm2 = cm.new_filemap("blork2.rs".to_string(),
                                  "first line€€.\n€ second line".to_string());
 
@@ -1411,7 +1450,11 @@ mod tests {
     fn t7() {
         // Test span_to_lines for a span ending at the end of filemap
         let cm = init_code_map();
-        let span = Span {lo: BytePos(12), hi: BytePos(23), expn_id: NO_EXPANSION};
+        let span = Span {
+            lo: BytePos(12),
+            hi: BytePos(23),
+            expn_id: NO_EXPANSION,
+        };
         let file_lines = cm.span_to_lines(span).unwrap();
 
         assert_eq!(file_lines.file.name, "blork.rs");
@@ -1426,8 +1469,12 @@ mod tests {
     fn span_from_selection(input: &str, selection: &str) -> Span {
         assert_eq!(input.len(), selection.len());
         let left_index = selection.find('~').unwrap() as u32;
-        let right_index = selection.rfind('~').map(|x|x as u32).unwrap_or(left_index);
-        Span { lo: BytePos(left_index), hi: BytePos(right_index + 1), expn_id: NO_EXPANSION }
+        let right_index = selection.rfind('~').map(|x| x as u32).unwrap_or(left_index);
+        Span {
+            lo: BytePos(left_index),
+            hi: BytePos(right_index + 1),
+            expn_id: NO_EXPANSION,
+        }
     }
 
     /// Test span_to_snippet and span_to_lines for a span coverting 3
@@ -1457,7 +1504,11 @@ mod tests {
     fn t8() {
         // Test span_to_snippet for a span ending at the end of filemap
         let cm = init_code_map();
-        let span = Span {lo: BytePos(12), hi: BytePos(23), expn_id: NO_EXPANSION};
+        let span = Span {
+            lo: BytePos(12),
+            hi: BytePos(23),
+            expn_id: NO_EXPANSION,
+        };
         let snippet = cm.span_to_snippet(span);
 
         assert_eq!(snippet, Ok("second line".to_string()));
@@ -1467,8 +1518,12 @@ mod tests {
     fn t9() {
         // Test span_to_str for a span ending at the end of filemap
         let cm = init_code_map();
-        let span = Span {lo: BytePos(12), hi: BytePos(23), expn_id: NO_EXPANSION};
-        let sstr =  cm.span_to_string(span);
+        let span = Span {
+            lo: BytePos(12),
+            hi: BytePos(23),
+            expn_id: NO_EXPANSION,
+        };
+        let sstr = cm.span_to_string(span);
 
         assert_eq!(sstr, "blork.rs:2:1: 2:12");
     }
@@ -1477,12 +1532,20 @@ mod tests {
     fn t10() {
         // Test span_to_expanded_string works in base case (no expansion)
         let cm = init_code_map();
-        let span = Span { lo: BytePos(0), hi: BytePos(11), expn_id: NO_EXPANSION };
+        let span = Span {
+            lo: BytePos(0),
+            hi: BytePos(11),
+            expn_id: NO_EXPANSION,
+        };
         let sstr = cm.span_to_expanded_string(span);
         assert_eq!(sstr, "blork.rs:1:1: 1:12\n`first line.`\n");
 
-        let span = Span { lo: BytePos(12), hi: BytePos(23), expn_id: NO_EXPANSION };
-        let sstr =  cm.span_to_expanded_string(span);
+        let span = Span {
+            lo: BytePos(12),
+            hi: BytePos(23),
+            expn_id: NO_EXPANSION,
+        };
+        let sstr = cm.span_to_expanded_string(span);
         assert_eq!(sstr, "blork.rs:2:1: 2:12\n`second line`\n");
     }
 
@@ -1491,15 +1554,28 @@ mod tests {
         // Test span_to_expanded_string works with expansion
         use ast::Name;
         let cm = init_code_map();
-        let root = Span { lo: BytePos(0), hi: BytePos(11), expn_id: NO_EXPANSION };
+        let root = Span {
+            lo: BytePos(0),
+            hi: BytePos(11),
+            expn_id: NO_EXPANSION,
+        };
         let format = ExpnFormat::MacroBang(Name(0u32));
-        let callee = NameAndSpan { format: format,
-                                   allow_internal_unstable: false,
-                                   span: None };
+        let callee = NameAndSpan {
+            format: format,
+            allow_internal_unstable: false,
+            span: None,
+        };
 
-        let info = ExpnInfo { call_site: root, callee: callee };
+        let info = ExpnInfo {
+            call_site: root,
+            callee: callee,
+        };
         let id = cm.record_expansion(info);
-        let sp = Span { lo: BytePos(12), hi: BytePos(23), expn_id: id };
+        let sp = Span {
+            lo: BytePos(12),
+            hi: BytePos(23),
+            expn_id: id,
+        };
 
         let sstr = cm.span_to_expanded_string(sp);
         assert_eq!(sstr,
@@ -1512,42 +1588,87 @@ mod tests {
         // root -> expA -> expA -> expB -> expB -> end
         use ast::Name;
 
-        let root = Span { lo: BytePos(0), hi: BytePos(11), expn_id: NO_EXPANSION };
+        let root = Span {
+            lo: BytePos(0),
+            hi: BytePos(11),
+            expn_id: NO_EXPANSION,
+        };
 
         let format_root = ExpnFormat::MacroBang(Name(0u32));
-        let callee_root = NameAndSpan { format: format_root,
-                                        allow_internal_unstable: false,
-                                        span: Some(root) };
+        let callee_root = NameAndSpan {
+            format: format_root,
+            allow_internal_unstable: false,
+            span: Some(root),
+        };
 
-        let info_a1 = ExpnInfo { call_site: root, callee: callee_root };
+        let info_a1 = ExpnInfo {
+            call_site: root,
+            callee: callee_root,
+        };
         let id_a1 = cm.record_expansion(info_a1);
-        let span_a1 = Span { lo: BytePos(12), hi: BytePos(23), expn_id: id_a1 };
+        let span_a1 = Span {
+            lo: BytePos(12),
+            hi: BytePos(23),
+            expn_id: id_a1,
+        };
 
         let format_a = ExpnFormat::MacroBang(Name(1u32));
-        let callee_a = NameAndSpan { format: format_a,
-                                      allow_internal_unstable: false,
-                                      span: Some(span_a1) };
+        let callee_a = NameAndSpan {
+            format: format_a,
+            allow_internal_unstable: false,
+            span: Some(span_a1),
+        };
 
-        let info_a2 = ExpnInfo { call_site: span_a1, callee: callee_a.clone() };
+        let info_a2 = ExpnInfo {
+            call_site: span_a1,
+            callee: callee_a.clone(),
+        };
         let id_a2 = cm.record_expansion(info_a2);
-        let span_a2 = Span { lo: BytePos(12), hi: BytePos(23), expn_id: id_a2 };
+        let span_a2 = Span {
+            lo: BytePos(12),
+            hi: BytePos(23),
+            expn_id: id_a2,
+        };
 
-        let info_b1 = ExpnInfo { call_site: span_a2, callee: callee_a };
+        let info_b1 = ExpnInfo {
+            call_site: span_a2,
+            callee: callee_a,
+        };
         let id_b1 = cm.record_expansion(info_b1);
-        let span_b1 = Span { lo: BytePos(25), hi: BytePos(36), expn_id: id_b1 };
+        let span_b1 = Span {
+            lo: BytePos(25),
+            hi: BytePos(36),
+            expn_id: id_b1,
+        };
 
         let format_b = ExpnFormat::MacroBang(Name(2u32));
-        let callee_b = NameAndSpan { format: format_b,
-                                     allow_internal_unstable: false,
-                                     span: None };
+        let callee_b = NameAndSpan {
+            format: format_b,
+            allow_internal_unstable: false,
+            span: None,
+        };
 
-        let info_b2 = ExpnInfo { call_site: span_b1, callee: callee_b.clone() };
+        let info_b2 = ExpnInfo {
+            call_site: span_b1,
+            callee: callee_b.clone(),
+        };
         let id_b2 = cm.record_expansion(info_b2);
-        let span_b2 = Span { lo: BytePos(25), hi: BytePos(36), expn_id: id_b2 };
+        let span_b2 = Span {
+            lo: BytePos(25),
+            hi: BytePos(36),
+            expn_id: id_b2,
+        };
 
-        let info_end = ExpnInfo { call_site: span_b2, callee: callee_b };
+        let info_end = ExpnInfo {
+            call_site: span_b2,
+            callee: callee_b,
+        };
         let id_end = cm.record_expansion(info_end);
-        Span { lo: BytePos(37), hi: BytePos(48), expn_id: id_end }
+        Span {
+            lo: BytePos(37),
+            hi: BytePos(48),
+            expn_id: id_end,
+        }
     }
 
     #[test]
@@ -1557,8 +1678,7 @@ mod tests {
         let cm = init_code_map();
         let end = init_expansion_chain(&cm);
         let sstr = cm.span_to_expanded_string(end);
-        let res_str =
-r"blork2.rs:2:1: 2:12
+        let res_str = r"blork2.rs:2:1: 2:12
 `second line`
   Callsite:
   ...

@@ -26,8 +26,8 @@ pub enum Style {
     UnderlineSecondary,
     LabelPrimary,
     LabelSecondary,
-    OldSkoolNoteText,
-    OldSkoolNote,
+    OldSchoolNoteText,
+    OldSchoolNote,
     NoStyle,
     Level(Level),
 }
@@ -159,7 +159,7 @@ impl TextBuffer2D {
         self.ensure_lines(line);
         let string_len = string.len();
 
-        //Push the old content over to make room for new content
+        // Push the old content over to make room for new content
         for i in 0..string_len {
             self.styles[line].insert(0, Style::NoStyle);
             self.text[line].insert(0, ' ');

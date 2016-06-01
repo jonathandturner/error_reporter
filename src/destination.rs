@@ -28,11 +28,11 @@ impl Destination {
                 try!(self.start_attr(term::Attr::ForegroundColor(term::color::BRIGHT_BLUE)));
             }
             Style::Quotation => {}
-            Style::OldSkoolNote => {
+            Style::OldSchoolNote => {
                 try!(self.start_attr(term::Attr::Bold));
                 try!(self.start_attr(term::Attr::ForegroundColor(term::color::BRIGHT_GREEN)));
             }
-            Style::OldSkoolNoteText | Style::HeaderMsg => {
+            Style::OldSchoolNoteText | Style::HeaderMsg => {
                 try!(self.start_attr(term::Attr::Bold));
             }
             Style::UnderlinePrimary | Style::LabelPrimary => {

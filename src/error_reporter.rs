@@ -94,6 +94,11 @@ impl ErrorReporter {
         buffer.append(1,
                       &self.cm.span_to_string(self.primary_span),
                       Style::LineAndColumn);
+
+        // Header line 3: the separating line
+        buffer.append(2,
+                      &" ",
+                      Style::NoStyle);
     }
 
     fn render_source_lines(&mut self, buffer: &mut TextBuffer2D) {
@@ -149,15 +154,22 @@ impl ErrorReporter {
 
             // TODO: while we're at it, go ahead and figure out the largest line number
             // so we can easily align the line number column
+            let highest_line = all_lines.last().unwrap().clone();
+            let len_of_largest_line = highest_line.to_string().len();
 
             for line in all_lines {
-                self.render_source_line(buffer, &file_map[fname][line]);
+                // render each line, making sure to make room for the '34 |>' at the beginning
+                self.render_source_line(buffer,
+                                        &file_map[fname][line],
+                                        3 + len_of_largest_line);
+            }
+            for i in 2..buffer.num_lines() {
+                buffer.puts(i, len_of_largest_line + 1, "|>", Style::LineNumber);
             }
         }
-        // println!("{:?}", file_map);
     }
 
-    fn render_source_line(&mut self, buffer: &mut TextBuffer2D, line: &Line) {
+    fn render_source_line(&mut self, buffer: &mut TextBuffer2D, line: &Line, width_offset: usize) {
         let result = self.cm.span_to_lines(line.span).unwrap();
         let source_string = result.file
             .get_line(result.lines.first().unwrap().line_index)
@@ -166,7 +178,11 @@ impl ErrorReporter {
         let line_offset = buffer.num_lines();
 
         // First create the source line we will highlight.
-        buffer.append(line_offset, &source_string, Style::Quotation);
+        buffer.puts(line_offset, width_offset, &source_string, Style::Quotation);
+        buffer.puts(line_offset,
+                    0,
+                    &(result.lines.first().unwrap().line_index + 1).to_string(),
+                    Style::LineNumber);
 
         if line.annotations.is_empty() {
             return;
@@ -204,35 +220,45 @@ impl ErrorReporter {
                 for p in annotation.start_col..annotation.end_col {
                     if p == annotation.start_col {
                         buffer.putc(line_offset + 1,
-                                    p,
+                                    width_offset + p,
                                     '^',
                                     if annotation.is_primary {
                                         Style::UnderlinePrimary
                                     } else {
-                                        Style::OldSkoolNote
+                                        Style::OldSchoolNote
                                     });
                     } else {
                         buffer.putc(line_offset + 1,
-                                    p,
+                                    width_offset + p,
                                     '~',
                                     if annotation.is_primary {
                                         Style::UnderlinePrimary
                                     } else {
-                                        Style::OldSkoolNote
+                                        Style::OldSchoolNote
                                     });
                     }
                 }
             } else {
                 for p in annotation.start_col..annotation.end_col {
                     if annotation.is_primary {
-                        buffer.putc(line_offset + 1, p, '^', Style::UnderlinePrimary);
+                        buffer.putc(line_offset + 1,
+                                    width_offset + p,
+                                    '^',
+                                    Style::UnderlinePrimary);
                         if !annotation.is_minimized {
-                            buffer.set_style(line_offset, p, Style::UnderlinePrimary);
+                            buffer.set_style(line_offset,
+                                             width_offset + p,
+                                             Style::UnderlinePrimary);
                         }
                     } else {
-                        buffer.putc(line_offset + 1, p, '-', Style::UnderlineSecondary);
+                        buffer.putc(line_offset + 1,
+                                    width_offset + p,
+                                    '-',
+                                    Style::UnderlineSecondary);
                         if !annotation.is_minimized {
-                            buffer.set_style(line_offset, p, Style::UnderlineSecondary);
+                            buffer.set_style(line_offset,
+                                             width_offset + p,
+                                             Style::UnderlineSecondary);
                         }
                     }
                 }
@@ -323,12 +349,12 @@ impl ErrorReporter {
             for index in 2..blank_lines {
                 if annotation.is_primary {
                     buffer.putc(line_offset + index,
-                                annotation.start_col,
+                                width_offset + annotation.start_col,
                                 '|',
                                 Style::UnderlinePrimary);
                 } else {
                     buffer.putc(line_offset + index,
-                                annotation.start_col,
+                                width_offset + annotation.start_col,
                                 '|',
                                 Style::UnderlineSecondary);
                 }
@@ -336,12 +362,12 @@ impl ErrorReporter {
 
             if annotation.is_primary {
                 buffer.puts(line_offset + blank_lines,
-                            annotation.start_col,
+                            width_offset + annotation.start_col,
                             annotation.label.as_ref().unwrap(),
                             Style::LabelPrimary);
             } else {
                 buffer.puts(line_offset + blank_lines,
-                            annotation.start_col,
+                            width_offset + annotation.start_col,
                             annotation.label.as_ref().unwrap(),
                             Style::LabelSecondary);
             }
