@@ -95,7 +95,7 @@ impl ErrorReporter {
 
         // Header line
         // eg) error: type mismatch [E123]
-        //TODO: still needs error number
+        // TODO: still needs error number
         buffer.append(0, &self.level.to_string(), Style::Level(self.level));
         buffer.append(0, ": ", Style::HeaderMsg);
         buffer.append(0, &self.primary_msg.clone(), Style::HeaderMsg);
@@ -127,14 +127,13 @@ impl ErrorReporter {
                 buffer.prepend(buffer_msg_line_offset, "--> ", Style::LineNumber);
                 let loc = self.cm.lookup_char_pos(self.primary_span.lo);
                 buffer.append(buffer_msg_line_offset,
-                            &format!("{}:{}:{}", loc.file.name, loc.line, loc.col.0),
-                            Style::LineAndColumn);
-            }
-            else {
+                              &format!("{}:{}:{}", loc.file.name, loc.line, loc.col.0),
+                              Style::LineAndColumn);
+            } else {
                 buffer.prepend(buffer_msg_line_offset, "::: ", Style::LineNumber);
                 buffer.append(buffer_msg_line_offset,
-                            &annotated_file.file.name,
-                            Style::LineAndColumn);
+                              &annotated_file.file.name,
+                              Style::LineAndColumn);
             }
             for i in 0..len_of_largest_line {
                 buffer.prepend(buffer_msg_line_offset, " ", Style::NoStyle);
@@ -147,15 +146,46 @@ impl ErrorReporter {
                         Style::LineNumber);
 
             // Next, output the annotate source for this file
-            for line in &annotated_file.lines {
+            for line_idx in 0..annotated_file.lines.len() {
                 self.render_source_line(&mut buffer,
                                         annotated_file.file.clone(),
-                                        &line,
+                                        &annotated_file.lines[line_idx],
                                         3 + len_of_largest_line);
+
+                // check to see if we need to print out or elide lines that come between
+                // this annotated line and the next one
+                if line_idx < (annotated_file.lines.len() - 1) {
+                    let line_idx_delta = annotated_file.lines[line_idx + 1].line_number -
+                                         annotated_file.lines[line_idx].line_number;
+                    if line_idx_delta > 2 {
+                        let last_buffer_line_num = buffer.num_lines();
+                        buffer.puts(last_buffer_line_num, 0, "...", Style::LineNumber);
+                    } else if line_idx_delta == 2 {
+                        let unannotated_line = annotated_file.file
+                            .get_line(annotated_file.lines[line_idx].line_number)
+                            .unwrap_or("");
+
+                        let last_buffer_line_num = buffer.num_lines();
+
+                        buffer.puts(last_buffer_line_num,
+                                    0,
+                                    &(annotated_file.lines[line_idx + 1].line_number - 1)
+                                        .to_string(),
+                                    Style::LineNumber);
+                        buffer.puts(last_buffer_line_num,
+                                    1 + len_of_largest_line,
+                                    "|>",
+                                    Style::LineNumber);
+                        buffer.puts(last_buffer_line_num,
+                                    3 + len_of_largest_line,
+                                    &unannotated_line,
+                                    Style::Quotation);
+                    }
+                }
             }
         }
 
-        //final step: take our styled buffer and render it
+        // final step: take our styled buffer and render it
         buffer.render()
     }
 
