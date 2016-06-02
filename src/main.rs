@@ -131,8 +131,43 @@ fn foo() {
     emit(Level::Warning, msg);
 }
 
+fn test3() {
+    let file_text = r#"
+fn foo() {
+    vec.push(vec.pop().unwrap());
+}
+"#;
+    let file_text2 = r#"
+fn bar() {
+    //comment line
+    vec2.push(vec2.pop().unwrap());
+}
+"#;
+    let cm = Rc::new(CodeMap::new());
+    let foo = cm.new_filemap_and_lines("foo.rs", file_text);
+    let bar = cm.new_filemap_and_lines("bar.rs", file_text2);
+    let span_vec1 = cm.span_substr(&foo, file_text, "vec", 0);
+    let span_vec0 = cm.span_substr(&foo, file_text, "vec", 1);
+    let span_vec2 = cm.span_substr(&bar, file_text2, "vec2", 1);
+
+    let mut err = ErrorReporter::new(Level::Warning,
+                                     String::from("Not sure what this is"),
+                                     span_vec0,
+                                     cm);
+
+    err.span_label(span_vec0, Some(String::from("primary message")));
+    err.span_label(span_vec1, Some(String::from("secondary message")));
+    err.span_label(span_vec2, Some(String::from("tertiary message")));
+
+    let msg = err.render();
+
+    emit(Level::Warning, msg);
+}
+
 fn main() {
     test1();
     println!("");
     test2();
+    println!("");
+    test3();
 }
