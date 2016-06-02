@@ -6,14 +6,14 @@ extern crate term;
 use std::io::{self, Write};
 use std::rc::Rc;
 
-mod text_buffer_2d;
-use text_buffer_2d::*;
+mod styled_buffer;
+use styled_buffer::*;
 
 mod error_reporter;
 use error_reporter::*;
 
-mod destination;
-use destination::*;
+mod emitter;
+use emitter::*;
 
 mod codemap;
 use codemap::*;
@@ -110,13 +110,18 @@ fn foo() {
 fn test2() {
     let file_text = r#"
 fn foo() {
-    vec.push(vec.pop().unwrap());
+    vec.push(1);
+    vec.push(2);
+    vec.push(3);
+    vec.push(4);
+    vec.push(5);
+    vec.push(6);
 }
 "#;
     let cm = Rc::new(CodeMap::new());
     let foo = cm.new_filemap_and_lines("foo.rs", file_text);
-    let span_vec1 = cm.span_substr(&foo, file_text, "vec", 0);
-    let span_vec0 = cm.span_substr(&foo, file_text, "vec", 1);
+    let span_vec1 = cm.span_substr(&foo, file_text, "vec", 2);
+    let span_vec0 = cm.span_substr(&foo, file_text, "vec", 4);
 
     let mut err = ErrorReporter::new(Level::Warning,
                                      String::from("Not sure what this is"),
@@ -144,8 +149,8 @@ fn bar() {
 }
 "#;
     let cm = Rc::new(CodeMap::new());
-    let foo = cm.new_filemap_and_lines("foo.rs", file_text);
     let bar = cm.new_filemap_and_lines("bar.rs", file_text2);
+    let foo = cm.new_filemap_and_lines("foo.rs", file_text);
     let span_vec1 = cm.span_substr(&foo, file_text, "vec", 0);
     let span_vec0 = cm.span_substr(&foo, file_text, "vec", 1);
     let span_vec2 = cm.span_substr(&bar, file_text2, "vec2", 1);

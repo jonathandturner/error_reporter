@@ -1,7 +1,7 @@
 use std::fmt;
 use std::rc::Rc;
 
-use text_buffer_2d::*;
+use styled_buffer::*;
 use term;
 
 use codemap::{self, Span, CharPos, FileMap};
@@ -89,14 +89,77 @@ impl ErrorReporter {
         }
     }
 
-    fn render_header(&mut self, buffer: &mut TextBuffer2D) {
-        // Header line 1: error: the error message [ENUM]
+    pub fn render(&mut self) -> Vec<Vec<StyledString>> {
+        // Create our styled buffer that we'll use to render the whole error message
+        let mut buffer = StyledBuffer::new();
+
+        // Header line
+        // eg) error: type mismatch [E123]
+        //TODO: still needs error number
         buffer.append(0, &self.level.to_string(), Style::Level(self.level));
         buffer.append(0, ": ", Style::HeaderMsg);
         buffer.append(0, &self.primary_msg.clone(), Style::HeaderMsg);
+
+        // Preprocess all the annotations so that they are grouped by file and by line number
+        // This helps us quickly iterate over the whole message (including secondary file spans)
+        let mut annotated_files = self.preprocess_annotations();
+
+        // Make sure our primary file comes first
+        let primary_lo = self.cm.lookup_char_pos(self.primary_span.lo);
+        if let Ok(pos) =
+               annotated_files.binary_search_by(|x| x.file.name.cmp(&primary_lo.file.name)) {
+            annotated_files.swap(0, pos);
+        }
+
+        // Print out the annotate source lines that correspond with the error
+        for annotated_file in annotated_files {
+            // figure out the largest line number so we can align the line number column
+            let highest_line = annotated_file.lines.last().unwrap().line_number;
+            let len_of_largest_line = highest_line.to_string().len();
+
+            // remember where we are in the output buffer for easy reference
+            let mut buffer_msg_line_offset = buffer.num_lines();
+
+            // print out the span location and spacer before we print the annotated source
+            // to do this, we need to know if this span will be primary
+            let is_primary = primary_lo.file.name == annotated_file.file.name;
+            if is_primary {
+                buffer.prepend(buffer_msg_line_offset, "--> ", Style::LineNumber);
+                let loc = self.cm.lookup_char_pos(self.primary_span.lo);
+                buffer.append(buffer_msg_line_offset,
+                            &format!("{}:{}:{}", loc.file.name, loc.line, loc.col.0),
+                            Style::LineAndColumn);
+            }
+            else {
+                buffer.prepend(buffer_msg_line_offset, "::: ", Style::LineNumber);
+                buffer.append(buffer_msg_line_offset,
+                            &annotated_file.file.name,
+                            Style::LineAndColumn);
+            }
+            for i in 0..len_of_largest_line {
+                buffer.prepend(buffer_msg_line_offset, " ", Style::NoStyle);
+            }
+
+            // Put in the spacer between the location and annotated source
+            buffer.puts(buffer_msg_line_offset + 1,
+                        len_of_largest_line + 1,
+                        "|>",
+                        Style::LineNumber);
+
+            // Next, output the annotate source for this file
+            for line in &annotated_file.lines {
+                self.render_source_line(&mut buffer,
+                                        annotated_file.file.clone(),
+                                        &line,
+                                        3 + len_of_largest_line);
+            }
+        }
+
+        //final step: take our styled buffer and render it
+        buffer.render()
     }
 
-    fn process_all_annotations(&mut self) -> Vec<FileWithAnnotatedLines> {
+    fn preprocess_annotations(&mut self) -> Vec<FileWithAnnotatedLines> {
         fn add_annotation_to_file(file_vec: &mut Vec<FileWithAnnotatedLines>,
                                   file: Rc<FileMap>,
                                   line_number: usize,
@@ -167,62 +230,8 @@ impl ErrorReporter {
         output
     }
 
-    fn render_annotated_source(&mut self, buffer: &mut TextBuffer2D) {
-        let mut annotated_files = self.process_all_annotations();
-
-        // Make sure our primary file comes first
-        let primary_lo = self.cm.lookup_char_pos(self.primary_span.lo);
-        if let Ok(pos) =
-               annotated_files.binary_search_by(|x| x.file.name.cmp(&primary_lo.file.name)) {
-            annotated_files.swap(0, pos);
-        }
-
-        for annotated_file in annotated_files {
-            // figure out the largest line number so we can easily align the line number column
-            let highest_line = annotated_file.lines.last().unwrap().line_number;
-            let len_of_largest_line = highest_line.to_string().len();
-
-            // remember where we are in the output render buffer for this output
-            let mut buffer_msg_line_offset = buffer.num_lines();
-
-            // print out the span location and spacer before we print the annotated source
-            // to do this, we need to know if this span will be primary
-            let is_primary = primary_lo.file.name == annotated_file.file.name;
-            if is_primary {
-                buffer.prepend(buffer_msg_line_offset, "--> ", Style::LineNumber);
-                let loc = self.cm.lookup_char_pos(self.primary_span.lo);
-                buffer.append(buffer_msg_line_offset,
-                            &format!("{}:{}:{}", loc.file.name, loc.line, loc.col.0),
-                            Style::LineAndColumn);
-            }
-            else {
-                buffer.prepend(buffer_msg_line_offset, "::: ", Style::LineNumber);
-                buffer.append(buffer_msg_line_offset,
-                            &annotated_file.file.name,
-                            Style::LineAndColumn);
-            }
-            for i in 0..len_of_largest_line {
-                buffer.prepend(buffer_msg_line_offset, " ", Style::NoStyle);
-            }
-
-            // Put in the spacer between the location and annotated source
-            buffer.puts(buffer_msg_line_offset + 1,
-                        len_of_largest_line + 1,
-                        "|>",
-                        Style::LineNumber);
-
-            // Finally, output the annotate source for this file
-            for line in &annotated_file.lines {
-                self.render_source_line(buffer,
-                                        annotated_file.file.clone(),
-                                        &line,
-                                        3 + len_of_largest_line);
-            }
-        }
-    }
-
     fn render_source_line(&mut self,
-                          buffer: &mut TextBuffer2D,
+                          buffer: &mut StyledBuffer,
                           file: Rc<FileMap>,
                           line: &Line,
                           width_offset: usize) {
@@ -437,23 +446,6 @@ impl ErrorReporter {
                         "|>",
                         Style::LineNumber);
         }
-    }
-
-    pub fn render(&mut self) -> Vec<Vec<StyledString>> {
-        let mut buffer = TextBuffer2D::new();
-
-        self.render_header(&mut buffer);
-        self.render_annotated_source(&mut buffer);
-
-        // let mut current_line = 2;
-        // println!("{:?}", self.cm.lookup_char_pos(self.primary_span.lo));
-        // let result = self.cm.span_to_lines(self.primary_span).unwrap();
-        // for line in result.lines {
-        // println!("{:?}", result.file.get_line(line.line_index));
-        // }
-        //
-
-        buffer.render()
     }
 }
 

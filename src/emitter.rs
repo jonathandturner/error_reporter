@@ -3,7 +3,7 @@ use std::io;
 use std::fmt;
 
 use term;
-use text_buffer_2d::*;
+use styled_buffer::*;
 
 use error_reporter::*;
 

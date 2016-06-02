@@ -39,7 +39,7 @@ pub struct StyledString {
 }
 
 #[derive(Debug)]
-pub struct TextBuffer2D {
+pub struct StyledBuffer {
     text: Vec<Vec<char>>,
     styles: Vec<Vec<Style>>,
 }
@@ -68,9 +68,9 @@ impl Level {
     }
 }
 
-impl TextBuffer2D {
-    pub fn new() -> TextBuffer2D {
-        TextBuffer2D {
+impl StyledBuffer {
+    pub fn new() -> StyledBuffer {
+        StyledBuffer {
             text: vec![],
             styles: vec![],
         }
