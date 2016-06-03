@@ -5,7 +5,7 @@ use std::fmt;
 use term;
 use styled_buffer::*;
 
-use error_reporter::*;
+use compiler_message::*;
 
 pub enum Destination {
     Terminal(Box<term::StderrTerminal>),
@@ -52,6 +52,9 @@ impl Destination {
             Style::Level(Level::Warning) => {
                 try!(self.start_attr(term::Attr::Bold));
                 try!(self.start_attr(term::Attr::ForegroundColor(term::color::YELLOW)));
+            }
+            Style::Level(Level::Note) => {
+                try!(self.start_attr(term::Attr::Bold));
             }
             Style::Level(_) => {}
         }
