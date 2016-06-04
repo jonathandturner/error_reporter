@@ -51,6 +51,14 @@ pub fn render_succinct(msg: &CompilerMessage) -> Vec<Vec<StyledString>> {
     buffer.append(0, &msg.level.to_string(), Style::Level(msg.level));
     buffer.append(0, ": ", Style::HeaderMsg);
     buffer.append(0, &msg.primary_msg.clone(), Style::HeaderMsg);
+    match msg.error_code {
+        Some(ref code) => {
+            buffer.append(0, " [", Style::ErrorCode);
+            buffer.append(0, &code, Style::ErrorCode);
+            buffer.append(0, "]", Style::ErrorCode);
+        }
+        _ => {}
+    }
 
     // Preprocess all the annotations so that they are grouped by file and by line number
     // This helps us quickly iterate over the whole message (including secondary file spans)

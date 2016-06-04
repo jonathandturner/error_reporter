@@ -12,6 +12,7 @@ pub struct CompilerMessage {
     pub primary_msg: String,
     pub span_labels: Vec<SpanLabel>,
     pub notes: Vec<String>,
+    pub error_code: Option<String>,
     pub cm: Rc<codemap::CodeMap>,
 }
 
@@ -33,6 +34,7 @@ impl CompilerMessage {
     pub fn new(level: Level,
                msg: String,
                primary_span: Span,
+               error_code: Option<String>,
                cm: Rc<codemap::CodeMap>)
                -> CompilerMessage {
 
@@ -40,6 +42,7 @@ impl CompilerMessage {
             level: level,
             primary_span: primary_span,
             primary_msg: msg,
+            error_code: error_code,
             span_labels: vec![],
             notes: vec![],
             cm: cm,

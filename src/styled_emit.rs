@@ -27,6 +27,10 @@ impl Destination {
                 try!(self.start_attr(term::Attr::Bold));
                 try!(self.start_attr(term::Attr::ForegroundColor(term::color::BRIGHT_BLUE)));
             }
+            Style::ErrorCode => {
+                try!(self.start_attr(term::Attr::Bold));
+                try!(self.start_attr(term::Attr::ForegroundColor(term::color::BRIGHT_MAGENTA)));
+            }
             Style::Quotation => {}
             Style::OldSchoolNote => {
                 try!(self.start_attr(term::Attr::Bold));
@@ -135,4 +139,18 @@ impl Write for Destination {
             Destination::Raw(ref mut w) => w.flush(),
         }
     }
+}
+
+pub fn emit(level: Level, msg: Vec<Vec<StyledString>>) -> io::Result<()> {
+    let mut dst = Destination::from_stderr();
+
+    for line in msg {
+        for part in line {
+            dst.apply_style(level, part.style);
+            write!(&mut dst, "{}", part.text);
+            dst.reset_attrs()?;
+        }
+        write!(&mut dst, "\n");
+    }
+    Ok(())
 }

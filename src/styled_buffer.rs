@@ -29,6 +29,7 @@ pub enum Style {
     OldSchoolNoteText,
     OldSchoolNote,
     NoStyle,
+    ErrorCode,
     Level(Level),
 }
 

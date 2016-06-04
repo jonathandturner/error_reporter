@@ -1552,7 +1552,6 @@ mod tests {
     #[test]
     fn t11() {
         // Test span_to_expanded_string works with expansion
-        use ast::Name;
         let cm = init_code_map();
         let root = Span {
             lo: BytePos(0),
@@ -1586,8 +1585,6 @@ mod tests {
     fn init_expansion_chain(cm: &CodeMap) -> Span {
         // Creates an expansion chain containing two recursive calls
         // root -> expA -> expA -> expB -> expB -> end
-        use ast::Name;
-
         let root = Span {
             lo: BytePos(0),
             hi: BytePos(11),
